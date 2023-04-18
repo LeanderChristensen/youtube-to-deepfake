@@ -1,0 +1,25 @@
+{
+  "name": "youtube-to-deepfake",
+  "version": "1.0.0",
+  "description": "Insert a youtube link and get a tts voice",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LeanderChristensen/youtube-to-deepfake.git"
+  },
+  "author": "LeanderChristensen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LeanderChristensen/youtube-to-deepfake/issues"
+  },
+  "homepage": "https://github.com/LeanderChristensen/youtube-to-deepfake#readme",
+  "dependencies": {
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "youtube-mp3-downloader": "^0.7.11",
+    "ytdl-core": "^4.11.4"
+  }
+}
