@@ -16,7 +16,7 @@ app.set('view engine', 'ejs');
 
 app.get('/', (req, res) => {
 	res.render("index");
-})
+});
 
 var YD = new YoutubeMp3Downloader({
 	'ffmpegPath': '/opt/homebrew/Cellar/ffmpeg/6.0/bin/ffmpeg', // Where is the FFmpeg binary located?
@@ -49,6 +49,36 @@ async function download(url) {
 };
 
 async function next(file) {
+	if (file) { // add a null check for file
+		formData.append('name', file);
+		const fileName = file.split("/");
+		formData.append('files', fs.createReadStream(file), {
+		  filename: fileName[1],
+		  contentType: 'audio/mpeg',
+		});
+		formData.append('description', '');
+		formData.append('labels', '');
+	  } else {
+		throw new Error('File is null or undefined');
+	  }
+	try {
+		const response = await axios.post('https://api.elevenlabs.io/v1/voices/add', formData, {
+		  headers: {
+			'accept': 'application/json',
+			'xi-api-key': apiKey,
+			...formData.getHeaders(),
+		  },
+		});
+		console.log(response.data);
+		fs.unlink(file);
+		return response.data.voice_id; // return the voice_id
+	} catch (error) {
+		console.error(error);
+		throw error; // throw the error to be caught in the calling function
+	}
+}
+
+async function tts(file) {
 	console.log(file);
 	const formData = new FormData();
 	formData.append('name', file);
@@ -60,8 +90,7 @@ async function next(file) {
 	formData.append('description', '');
 	formData.append('labels', '');
 	
-	// make the API request using axios
-	axios.post('https://api.elevenlabs.io/v1/voices/add', formData, {
+	axios.post(`https://api.elevenlabs.io/v1/text-to-speech/{$voice_id}`, formData, {
 	  headers: {
 		'accept': 'application/json',
 		'xi-api-key': apiKey,
@@ -81,9 +110,16 @@ fsExtra.emptyDirSync('cache');
 
 app.post('/download', async function (req, res) {
 	console.log(`url: ${req.body.url}`);
-	await download(req.body.url);
+	const file = await download(req.body.url);
+	const voiceId = await next(file);
+	res.json({ voice_id: voiceId });
+});
+
+app.post('/tts', async function (req, res) {
+	console.log(`TTS: ${req.body.text}`);
+	await tts(req.body.text);
 });
 
 app.listen(port, () => {
 	console.log(`Example app listening on port ${port}`);
-})
+});

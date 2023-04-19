@@ -10,15 +10,28 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <script>
-        function formSubmit(e){
+        function linkSubmit(e){
             e.preventDefault(); //This will prevent the default click action
-        
-            var frm = $('#appform');
-        
             $.ajax({
-                type: frm.attr('method'),
+                type: $('#linkForm').attr('method'),
                 url: '/download',
-                data: frm.serialize(),
+                data: $('#linkForm').serialize(),
+                success: function (data) {
+                    console.log('Submission was successful.');
+                    console.log(data.voice_id);
+                },
+                error: function (data) {
+                    console.log('An error occurred.');
+                    console.log(data);
+                }
+            });
+        }
+        function ttsSubmit(e){
+            e.preventDefault(); //This will prevent the default click action
+            $.ajax({
+                type: $('#ttsForm').attr('method'),
+                url: '/tts',
+                data: $('#ttsForm').serialize(),
                 success: function (data) {
                     console.log('Submission was successful.');
                     console.log(data);
@@ -32,14 +45,19 @@
     </script>
 </head>
 <body>
+<div id="main">
     <h1>Youtube to deepfake voice app</h1>
-    <form action="#" id="appform" onsubmit="formSubmit(event);" method="POST">
-        <p>Input youtube-link here:</p>
-        <input id="youtube-link" name="url" type="text" placeholder="youtube.com/watch?v=jNQXAC9IVRw">
-        <input type="submit">
+    <form action="#" id="linkForm" onsubmit="linkSubmit(event);" method="POST">
+        <input class="form-control" id="youtube-link" name="url" type="text" placeholder="youtube.com/watch?v=jNQXAC9IVRw">
+        <input class="btn btn-primary" type="submit">
         </br>
-        <textarea id="voice" name="Deepfake Voice" rows="4" cols="50">
-        </textarea>
     </form>
+    <div id="tts">
+    <form action="#" id="ttsForm" onsubmit="ttsSubmit(event);" method="POST">
+        <textarea class="form-control" id="voice" name="text" rows="4" cols="50"></textarea>
+        <input class="btn btn-primary" type="submit">
+    </form>
+    </div>
+</div>
 </body>
 </html>
