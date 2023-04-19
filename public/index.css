@@ -9,9 +9,17 @@ body {
     width: 600px;
     margin-left: auto;
     margin-right: auto;
-    margin-top: 50px;
+    margin-top: 140px;
 }
 
-textarea {
-    margin-top: 70px;
+.formButton {
+    width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+    /*background-color: red !important; */
+}
+
+.textBox {
+    margin-top: 30px;
+    margin-bottom: 30px;
 }

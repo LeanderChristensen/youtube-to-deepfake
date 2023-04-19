@@ -4,8 +4,11 @@ const YoutubeMp3Downloader = require('youtube-mp3-downloader');
 const axios = require('axios');
 const FormData = require('form-data');
 const fsExtra = require('fs-extra');
+const socketio = require('socket.io');
+const http = require('http');
 const app = express();
 const port = 3000;
+const server = http.createServer(app);
 require('dotenv').config();
 const apiKey = process.env.ELEVEN_LABS;
 
@@ -13,6 +16,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(__dirname + '/public'));
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
+const io = socketio(server);
 
 app.get('/', (req, res) => {
 	res.render("index");
@@ -26,29 +30,37 @@ var YD = new YoutubeMp3Downloader({
 	'progressTimeout': 500 // How long should be the interval of the progress reports
 });
 
-YD.on('finished', function(error, data) {
-    if (error) {
-        console.log(error);
-    } else {
-        console.log('\nDownload and conversion complete');
-		next(data.file);
-    }
-});
+
 
 YD.on('error', function(error) {
 	console.log(error);
 });
 
 YD.on('progress', function(progress) {
-	process.stdout.write(`Downloading and converting to mp3 - ${Math.floor(progress.progress.percentage)}%\r`);
+	const percentage = Math.floor(progress.progress.percentage);
+	process.stdout.write(`Downloading and converting to mp3 - ${percentage}%\r`);
+	io.emit('progress', percentage);
 });
 
 async function download(url) {
 	const id = url.split('v=')[1];
-	YD.download(id);
+	return new Promise((resolve, reject) => {
+		YD.on('finished', function (error, data) {
+		  if (error) {
+			console.log(error);
+			reject(error); // reject the Promise if there's an error
+		  } else {
+			console.log('\nDownload and conversion complete');
+			resolve(data.file); // resolve the Promise with the file name
+		  }
+		});
+		YD.download(id);
+	  });
 };
 
 async function next(file) {
+	console.log(file);
+	const formData = new FormData();
 	if (file) { // add a null check for file
 		formData.append('name', file);
 		const fileName = file.split("/");
@@ -70,7 +82,11 @@ async function next(file) {
 		  },
 		});
 		console.log(response.data);
-		fs.unlink(file);
+		fs.unlink(file, (err) => {
+			if (err) {
+			  console.error(err);
+			}
+		});
 		return response.data.voice_id; // return the voice_id
 	} catch (error) {
 		console.error(error);
@@ -78,32 +94,25 @@ async function next(file) {
 	}
 }
 
-async function tts(file) {
-	console.log(file);
-	const formData = new FormData();
-	formData.append('name', file);
-	const fileName = file.split("/");
-	formData.append('files', fs.createReadStream(file), {
-		filename: fileName[1],
-		contentType: 'audio/mpeg',
-	});
-	formData.append('description', '');
-	formData.append('labels', '');
-	
-	axios.post(`https://api.elevenlabs.io/v1/text-to-speech/{$voice_id}`, formData, {
+async function tts(text, voice_id) {
+	const data = {
+	  text: text,
+	  voice_settings: {
+		stability: 0,
+		similarity_boost: 0
+	  }
+	};
+	const config = {
 	  headers: {
-		'accept': 'application/json',
+		'accept': 'audio/mpeg',
 		'xi-api-key': apiKey,
-		...formData.getHeaders(),
+		'Content-Type': 'application/json'
 	  },
-	})
-	  .then(response => {
-		console.log(response.data);
-		fs.unlink(file);
-	  })
-	  .catch(error => {
-		console.error(error);
-	  });
+	  responseType: 'arraybuffer'
+	};
+	const response = await axios.post(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, data, config);
+	const base64response = Buffer.from(response.data).toString('base64');
+	return base64response;
 }
 
 fsExtra.emptyDirSync('cache');
@@ -117,9 +126,12 @@ app.post('/download', async function (req, res) {
 
 app.post('/tts', async function (req, res) {
 	console.log(`TTS: ${req.body.text}`);
-	await tts(req.body.text);
+	console.log(`voice_id: ${req.body.voice_id}`);
+	const audio = await tts(req.body.text, req.body.voice_id);
+	res.set('Content-Type', 'audio/mpeg');
+	res.send(audio);
 });
 
-app.listen(port, () => {
-	console.log(`Example app listening on port ${port}`);
+server.listen(3000, () => {
+	console.log('Listening on localhost:3000');
 });
