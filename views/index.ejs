@@ -17,6 +17,8 @@
             $('#progressBar').width(percentage + '%');
         });
         function linkSubmit(e){
+            document.getElementById('linkFormDiv').style.display = 'none';
+            document.getElementById('loadingDiv').style.display = 'block';
             e.preventDefault(); //This will prevent the default click action
             $.ajax({
                 type: $('#linkForm').attr('method'),
@@ -26,7 +28,7 @@
                     console.log('Submission was successful.');
                     voice_id = data.voice_id;
                     console.log(`voice_id: ${voice_id}`);
-                    document.getElementById('linkFormDiv').style.display = 'none';
+                    document.getElementById('loadingDiv').style.display = 'none';
                     document.getElementById('ttsFormDiv').style.display = 'block';
                 },
                 error: function (data) {
@@ -74,11 +76,16 @@
             <input class="btn btn-outline-light formButton" type="submit" value="Submit link">
         </form>
     </div>
-    <div id="progressBar" <%=//</div>style="height:50px;background-color:red;" %>></div>
-    <div id="ttsFormDiv" style="display:none;">
+    <div id="loadingDiv" style="display: none;">
+        <h2>Loading</h2>
+        <div id="progressBar" style="height:50px;background-color:blue;"></div>
+    </div>
+    <div id="ttsFormDiv" style="display:block;">
         <form action="#" id="ttsForm" onsubmit="ttsSubmit(event);" method="POST">
             <textarea class="form-control textBox" id="voice" name="text" rows="4" cols="50"></textarea>
-            <input class="btn btn-primary formButton" type="submit">
+            <input id="submitBtn" class="btn btn-outline-light formButton" type="submit">
+            <input id="playBtn" class="btn btn-outline-light formButton" type="submit" value="Play" disabled>
+            <input id="downloadBtn" class="btn btn-outline-light formButton" type="submit" value="Download" disabled>
         </form>
     </div>
 </div>

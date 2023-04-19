@@ -6,11 +6,14 @@ const FormData = require('form-data');
 const fsExtra = require('fs-extra');
 const socketio = require('socket.io');
 const http = require('http');
+const https = require('https');
 const app = express();
 const port = 3000;
 const server = http.createServer(app);
 require('dotenv').config();
 const apiKey = process.env.ELEVEN_LABS;
+var voices = [];
+let timeouts = {};
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(__dirname + '/public'));
@@ -23,9 +26,9 @@ app.get('/', (req, res) => {
 });
 
 var YD = new YoutubeMp3Downloader({
-	'ffmpegPath': '/opt/homebrew/Cellar/ffmpeg/6.0/bin/ffmpeg', // Where is the FFmpeg binary located?
-	'outputPath': 'cache', // Where should the downloaded and encoded files be stored?
-	'youtubeVideoQuality': 'highestaudio', // What video quality should be used?
+	'ffmpegPath': '/opt/homebrew/Cellar/ffmpeg/6.0/bin/ffmpeg',
+	'outputPath': 'cache',
+	'youtubeVideoQuality': 'highestaudio',
 	'queueParallelism': 2, // How many parallel downloads/encodes should be started?
 	'progressTimeout': 500 // How long should be the interval of the progress reports
 });
@@ -95,6 +98,7 @@ async function next(file) {
 }
 
 async function tts(text, voice_id) {
+	setUserTimeout(voice_id);
 	const data = {
 	  text: text,
 	  voice_settings: {
@@ -121,6 +125,8 @@ app.post('/download', async function (req, res) {
 	console.log(`url: ${req.body.url}`);
 	const file = await download(req.body.url);
 	const voiceId = await next(file);
+	setUserTimeout(voiceId);
+	voices.push(voiceId);
 	res.json({ voice_id: voiceId });
 });
 
@@ -131,6 +137,32 @@ app.post('/tts', async function (req, res) {
 	res.set('Content-Type', 'audio/mpeg');
 	res.send(audio);
 });
+
+async function deleteVoice(voice) {
+	const config = {
+		headers: {
+		  'xi-api-key': apiKey
+		}
+	};
+	try {
+		const response = await axios.delete(`https://api.elevenlabs.io/v1/voices/${voice}`, config);
+		console.log(`Deleted ${voice} - ${response.status}`);
+	} catch (error) {
+		console.error(`Error deleting voice ${voice}: ${error.message}`);
+	}
+}
+
+function setUserTimeout(userId) {
+	clearTimeout(timeouts[userId]);
+	timeouts[userId] = setTimeout(() => {
+	  // Perform logout action for user with userId here
+	  // Remove the timeout ID for this user
+	  delete timeouts[userId];
+	  deleteVoice(userId);
+	}, 15 * 60 * 1000); // 15 minutes
+}
+
+//deleteVoice('PeaFz3OYKYUt3GU80Plz');
 
 server.listen(3000, () => {
 	console.log('Listening on localhost:3000');
