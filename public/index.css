@@ -13,13 +13,37 @@ body {
 }
 
 .formButton {
-    width: 200px;
+    width: 197px;
     margin-left: auto;
     margin-right: auto;
+    display: inline-block;
     /*background-color: red !important; */
 }
 
 .textBox {
     margin-top: 30px;
     margin-bottom: 30px;
+}
+
+.form-control::placeholder {
+    color: #ababab !important; /* change this to your desired color */
+}
+
+#progressBar {
+    width: 0;
+    height: 25px;
+    background-color: #fff;
+    border-radius: 5px;
+}
+
+#submitBtn {
+    margin-bottom: 25px;
+}
+
+#playBtn {
+    margin-right: 25px;
+}
+
+#youtubeLink {
+ 
 }

@@ -162,9 +162,8 @@ function setUserTimeout(userId) {
 
 app.get('/checkSessionExpired/:userId', (req, res) => {
 	const { userId } = req.params;
-	const sessionExpired = hasSessionExpired(userId);
-	if (timeouts[userId]) { res.json({ sessionExpired }) }
-});  
+	if (timeouts[userId]) { res.send(true) }
+});
 
 //deleteVoice('PeaFz3OYKYUt3GU80Plz');
 

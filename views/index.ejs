@@ -12,10 +12,19 @@
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <script>
         var voice_id = null;
+        var audio = null;
+        var audioURL = null;
+        function downloadSound() {
+            if (!audioURL) return;
+            const downloadLink = document.createElement('a');
+            downloadLink.href = audioURL;
+            downloadLink.download = 'audio.mp3';
+            downloadLink.click();
+        }
         const socket = io.connect();
         socket.on('progress', function(percentage) {
             $('#progressBar').width(percentage + '%');
-        });
+        });/*
 		setInterval(() => {
 			if (voice_id) {
 				Promise.race([
@@ -24,7 +33,7 @@
 				])
 				  .then(res => res.json())
 				  .then(data => {
-				    if (data.sessionExpired) {
+				    if (data) {
 				      document.getElementById('linkFormDiv').style.display = 'block';
 				      document.getElementById('ttsFormDiv').style.display = 'none';
 				      document.getElementById('loadingDiv').style.display = 'none';
@@ -39,9 +48,10 @@
 				    document.getElementById('errorDiv').style.display = 'block';
 				  });
 			}
-		}, 10000); // check server/client connection every 10 seconds
+		}, 10000); // check server/client connection every 10 seconds */
         function linkSubmit(e){
             document.getElementById('linkFormDiv').style.display = 'none';
+            document.getElementById('title').style.display = 'none';
             document.getElementById('loadingDiv').style.display = 'block';
             e.preventDefault(); //This will prevent the default click action
             $.ajax({
@@ -53,6 +63,7 @@
                     voice_id = data.voice_id;
                     console.log(`voice_id: ${voice_id}`);
                     document.getElementById('loadingDiv').style.display = 'none';
+                    document.getElementById('title').style.display = 'block';
                     document.getElementById('ttsFormDiv').style.display = 'block';
                 },
                 error: function (data) {
@@ -61,6 +72,8 @@
             });
         }
         function ttsSubmit(e){
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('downloadBtn').disabled = true;
             e.preventDefault(); //This will prevent the default click action
             $.ajax({
                 type: $('#ttsForm').attr('method'),
@@ -77,11 +90,12 @@
                     for (let i = 0; i < len; i++) {
                       bytes[i] = binaryString.charCodeAt(i);
                     }
-
                     const audioBlob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
-                    const audioURL = URL.createObjectURL(audioBlob);
-                    const audio = new Audio(audioURL);
+                    audioURL = URL.createObjectURL(audioBlob);
+                    audio = new Audio(audioURL);
                     audio.play();
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('downloadBtn').disabled = false;
                 },
                 error: function (data) {
                     console.log('An error occurred.');
@@ -93,24 +107,24 @@
 </head>
 <body>
 <div id="main">
-    <h1>Youtube to deepfake voice app</h1>
+    <h1 id="title">Youtube to deepfake voice app</h1>
     <div id="linkFormDiv">
         <form action="#" id="linkForm" onsubmit="linkSubmit(event);" method="POST">
-            <input class="form-control textBox" id="youtube-link" name="url" type="text" value="https://www.youtube.com/watch?v=KMU0tzLwhbE" placeholder="https://www.youtube.com/watch?v=2ZIpFytCSVc">
-            <input class="btn btn-outline-light formButton" type="submit" value="Submit link">
+            <input class="form-control textBox" id="youtubeLink" name="url" type="text" autocomplete="off" placeholder="https://www.youtube.com/watch?v=2ZIpFytCSVc">
+            <input class="btn btn-outline-light formButton" type="submit" value="Create">
         </form>
     </div>
     <div id="loadingDiv" style="display: none;">
         <h2>Loading</h2>
-        <div id="progressBar" style="height:50px;background-color:blue;"></div>
+        <div id="progressBar"></div>
     </div>
-    <div id="ttsFormDiv" style="display:block;">
+    <div id="ttsFormDiv" style="display:none;">
         <form action="#" id="ttsForm" onsubmit="ttsSubmit(event);" method="POST">
-            <textarea class="form-control textBox" id="voice" name="text" rows="4" cols="50"></textarea>
-            <input id="submitBtn" class="btn btn-outline-light formButton" type="submit">
-            <input id="playBtn" class="btn btn-outline-light formButton" type="submit" value="Play" disabled>
-            <input id="downloadBtn" class="btn btn-outline-light formButton" type="submit" value="Download" disabled>
+            <textarea class="form-control textBox" id="voice" name="text" rows="4" autocomplete="off" cols="50"></textarea>
+            <input id="submitBtn" class="btn btn-outline-light formButton" type="submit" value="Generate">
         </form>
+            <input id="playBtn" class="btn btn-outline-light formButton" type="submit" onclick="audio.play()" value="Replay" disabled>
+            <input id="downloadBtn" class="btn btn-outline-light formButton" type="submit" onclick="downloadSound()" value="Download" disabled>
     </div>
 </div>
 </body>
