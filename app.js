@@ -33,8 +33,6 @@ var YD = new YoutubeMp3Downloader({
 	'progressTimeout': 500 // How long should be the interval of the progress reports
 });
 
-
-
 YD.on('error', function(error) {
 	console.log(error);
 });
@@ -161,6 +159,12 @@ function setUserTimeout(userId) {
 	  deleteVoice(userId);
 	}, 15 * 60 * 1000); // 15 minutes
 }
+
+app.get('/checkSessionExpired/:userId', (req, res) => {
+	const { userId } = req.params;
+	const sessionExpired = hasSessionExpired(userId);
+	if (timeouts[userId]) { res.json({ sessionExpired }) }
+});  
 
 //deleteVoice('PeaFz3OYKYUt3GU80Plz');
 
