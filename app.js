@@ -20,6 +20,7 @@ app.use(express.static(__dirname + '/public'));
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 const io = socketio(server);
+const uuid = require('uuid');
 
 app.get('/', (req, res) => {
 	res.render("index");
@@ -29,7 +30,7 @@ var YD = new YoutubeMp3Downloader({
 	'ffmpegPath': '/opt/homebrew/Cellar/ffmpeg/6.0/bin/ffmpeg',
 	'outputPath': 'cache',
 	'youtubeVideoQuality': 'highestaudio',
-	'queueParallelism': 2, // How many parallel downloads/encodes should be started?
+	'queueParallelism': 5, // How many parallel downloads/encodes should be started?
 	'progressTimeout': 500 // How long should be the interval of the progress reports
 });
 
@@ -59,41 +60,46 @@ async function download(url) {
 	  });
 };
 
-async function next(file) {
-	console.log(file);
-	const formData = new FormData();
-	if (file) { // add a null check for file
-		formData.append('name', file);
-		const fileName = file.split("/");
-		formData.append('files', fs.createReadStream(file), {
-		  filename: fileName[1],
-		  contentType: 'audio/mpeg',
-		});
-		formData.append('description', '');
-		formData.append('labels', '');
-	  } else {
-		throw new Error('File is null or undefined');
-	  }
-	try {
-		const response = await axios.post('https://api.elevenlabs.io/v1/voices/add', formData, {
-		  headers: {
-			'accept': 'application/json',
-			'xi-api-key': apiKey,
-			...formData.getHeaders(),
-		  },
-		});
-		console.log(response.data);
-		fs.unlink(file, (err) => {
-			if (err) {
-			  console.error(err);
-			}
-		});
-		return response.data.voice_id; // return the voice_id
-	} catch (error) {
-		console.error(error);
-		throw error; // throw the error to be caught in the calling function
-	}
+async function next(file, retryCount = 0) {
+  console.log(file);
+  const formData = new FormData();
+  if (file) { // add a null check for file
+    formData.append('name', file);
+    const fileName = file.split("/");
+    formData.append('files', fs.createReadStream(file), {
+      filename: fileName[1],
+      contentType: 'audio/mpeg',
+    });
+    formData.append('description', '');
+    formData.append('labels', '');
+  } else {
+    throw new Error('File is null or undefined');
+  }
+  try {
+    const response = await axios.post('https://api.elevenlabs.io/v1/voices/add', formData, {
+      headers: {
+        'accept': 'application/json',
+        'xi-api-key': apiKey,
+        ...formData.getHeaders(),
+      },
+    });
+    console.log(response.data);
+    fs.unlink(file, (err) => {
+      if (err) {
+        console.error(err);
+      }
+    });
+    return response.data.voice_id; // return the voice_id
+  } catch (error) {
+    console.error(error);
+    if (error.response && error.response.status === 403 && retryCount < 3) {
+      console.log(`Retrying request for ${file} - retry count: ${retryCount}`);
+      return next(file, retryCount + 1); // retry the request with the same file
+    }
+    throw error; // throw the error to be caught in the calling function
+  }
 }
+
 
 async function tts(text, voice_id) {
 	setUserTimeout(voice_id);
@@ -112,10 +118,16 @@ async function tts(text, voice_id) {
 	  },
 	  responseType: 'arraybuffer'
 	};
-	const response = await axios.post(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, data, config);
-	const base64response = Buffer.from(response.data).toString('base64');
-	return base64response;
-}
+	
+	try {
+	  const response = await axios.post(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, data, config);
+	  const base64response = Buffer.from(response.data).toString('base64');
+	  return base64response;
+	} catch (error) {
+	  console.error(error);
+	  return null; // or return a default value or handle the error in another way
+	}
+}  
 
 fsExtra.emptyDirSync('cache');
 
@@ -153,19 +165,17 @@ async function deleteVoice(voice) {
 function setUserTimeout(userId) {
 	clearTimeout(timeouts[userId]);
 	timeouts[userId] = setTimeout(() => {
-	  // Perform logout action for user with userId here
-	  // Remove the timeout ID for this user
-	  delete timeouts[userId];
-	  deleteVoice(userId);
-	}, 15 * 60 * 1000); // 15 minutes
+		// Perform logout action for user with userId here
+		// Remove the timeout ID for this user
+		delete timeouts[userId];
+		deleteVoice(userId);
+	}, 10 * 60 * 1000); // 10 minutes
 }
 
 app.get('/checkSessionExpired/:userId', (req, res) => {
 	const { userId } = req.params;
 	if (timeouts[userId]) { res.send(true) }
 });
-
-//deleteVoice('PeaFz3OYKYUt3GU80Plz');
 
 server.listen(3000, () => {
 	console.log('Listening on localhost:3000');

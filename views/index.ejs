@@ -24,7 +24,7 @@
         const socket = io.connect();
         socket.on('progress', function(percentage) {
             $('#progressBar').width(percentage + '%');
-        });/*
+        });
 		setInterval(() => {
 			if (voice_id) {
 				Promise.race([
@@ -33,22 +33,19 @@
 				])
 				  .then(res => res.json())
 				  .then(data => {
-				    if (data) {
-				      document.getElementById('linkFormDiv').style.display = 'block';
-				      document.getElementById('ttsFormDiv').style.display = 'none';
-				      document.getElementById('loadingDiv').style.display = 'none';
-				      document.getElementById('errorDiv').style.display = 'none';
-				    }
+				    if (data) { return; }
 				  })
 				  .catch(error => {
 				    console.error(error);
+                    console.log("Lost connection to server");
+                    document.getElementById('title').style.display = 'none';
 				    document.getElementById('linkFormDiv').style.display = 'none';
 				    document.getElementById('ttsFormDiv').style.display = 'none';
 				    document.getElementById('loadingDiv').style.display = 'none';
 				    document.getElementById('errorDiv').style.display = 'block';
 				  });
 			}
-		}, 10000); // check server/client connection every 10 seconds */
+		}, 10000); // check server/client connection every 10 seconds
         function linkSubmit(e){
             document.getElementById('linkFormDiv').style.display = 'none';
             document.getElementById('title').style.display = 'none';
@@ -117,6 +114,9 @@
     <div id="loadingDiv" style="display: none;">
         <h2>Loading</h2>
         <div id="progressBar"></div>
+    </div>
+    <div id="errorDiv" style="display: none;">
+        <h2>⚠️ Connection to server lost</h2>
     </div>
     <div id="ttsFormDiv" style="display:none;">
         <form action="#" id="ttsForm" onsubmit="ttsSubmit(event);" method="POST">
