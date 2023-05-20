@@ -17,7 +17,6 @@ body {
     margin-left: auto;
     margin-right: auto;
     display: inline-block;
-    /*background-color: red !important; */
 }
 
 .textBox {
@@ -26,14 +25,23 @@ body {
 }
 
 .form-control::placeholder {
-    color: #ababab !important; /* change this to your desired color */
+    color: #ababab !important;
 }
 
-#progressBar {
-    width: 0;
-    height: 25px;
-    background-color: #fff;
-    border-radius: 5px;
+#progress {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 #submitBtn {
@@ -42,4 +50,22 @@ body {
 
 #playBtn {
     margin-right: 25px;
+}
+
+@media screen and (max-width: 600px) {
+    #main {
+        width: 100%;
+    }
+    .textBox {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 425px) {
+    #playBtn {
+        margin-right: 0;
+    }
+    #submitBtn {
+        margin-bottom: 5px;
+    }
 }

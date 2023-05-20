@@ -5,11 +5,9 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Youtube to deepfake</title>
-    <link rel="icon" type="image/x-icon" href="Snorre_2.ico">
     <link href="index.css" rel="stylesheet" type="text/css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
     <script>
         var voice_id = null;
         var audio = null;
@@ -21,10 +19,33 @@
             downloadLink.download = 'audio.mp3';
             downloadLink.click();
         }
-        const socket = io.connect();
-        socket.on('progress', function(percentage) {
-            $('#progressBar').width(percentage + '%');
-        });
+        Promise.race([
+				  fetch(`/checkIfFull`),
+				  new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
+				])
+				  .then(res => res.json())
+				  .then(data => {
+				    if (data) {
+                        if (data == 1) { return; }
+                    	console.log("Server is full, please try again later");
+                    	document.getElementById('title').style.display = 'none';
+				    	document.getElementById('linkFormDiv').style.display = 'none';
+				    	document.getElementById('ttsFormDiv').style.display = 'none';
+				    	document.getElementById('loadingDiv').style.display = 'none';
+				    	document.getElementById('errorDiv').style.display = 'none';
+						document.getElementById('fullDiv').style.display = 'block';
+					}
+				  })
+				  .catch(error => {
+				    console.error(error);
+                    console.log("Lost connection to server");
+                    document.getElementById('title').style.display = 'none';
+				    document.getElementById('linkFormDiv').style.display = 'none';
+				    document.getElementById('ttsFormDiv').style.display = 'none';
+				    document.getElementById('loadingDiv').style.display = 'none';
+					document.getElementById('fullDiv').style.display = 'none';
+				    document.getElementById('errorDiv').style.display = 'block';
+				  });
 		setInterval(() => {
 			if (voice_id) {
 				Promise.race([
@@ -42,36 +63,80 @@
 				    document.getElementById('linkFormDiv').style.display = 'none';
 				    document.getElementById('ttsFormDiv').style.display = 'none';
 				    document.getElementById('loadingDiv').style.display = 'none';
+					document.getElementById('fullDiv').style.display = 'none';
+				    document.getElementById('errorDiv').style.display = 'block';
+				  });
+			} else {
+				Promise.race([
+				  fetch(`/checkIfFull`),
+				  new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
+				])
+				  .then(res => res.json())
+				  .then(data => {
+				    if (data) {
+                        if (data == 1) { return; }
+                    	console.log("Server is full, please try again later");
+                    	document.getElementById('title').style.display = 'none';
+				    	document.getElementById('linkFormDiv').style.display = 'none';
+				    	document.getElementById('ttsFormDiv').style.display = 'none';
+				    	document.getElementById('loadingDiv').style.display = 'none';
+				    	document.getElementById('errorDiv').style.display = 'none';
+						document.getElementById('fullDiv').style.display = 'block';
+					}
+				  })
+				  .catch(error => {
+				    console.error(error);
+                    console.log("Lost connection to server");
+                    document.getElementById('title').style.display = 'none';
+				    document.getElementById('linkFormDiv').style.display = 'none';
+				    document.getElementById('ttsFormDiv').style.display = 'none';
+				    document.getElementById('loadingDiv').style.display = 'none';
+					document.getElementById('fullDiv').style.display = 'none';
 				    document.getElementById('errorDiv').style.display = 'block';
 				  });
 			}
 		}, 10000); // check server/client connection every 10 seconds
         function linkSubmit(e){
-            document.getElementById('linkFormDiv').style.display = 'none';
-            document.getElementById('title').style.display = 'none';
-            document.getElementById('loadingDiv').style.display = 'block';
-            e.preventDefault(); //This will prevent the default click action
-            $.ajax({
-                type: $('#linkForm').attr('method'),
-                url: '/download',
-                data: $('#linkForm').serialize(),
-                success: function (data) {
-                    console.log('Submission was successful.');
-                    voice_id = data.voice_id;
-                    console.log(`voice_id: ${voice_id}`);
-                    document.getElementById('loadingDiv').style.display = 'none';
-                    document.getElementById('title').style.display = 'block';
-                    document.getElementById('ttsFormDiv').style.display = 'block';
-                },
-                error: function (data) {
-                    console.log('An error occurred.');
-                }
-            });
+            const youtubeLink = document.getElementById('youtubeLink').value;
+            const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})$/;
+            e.preventDefault();
+            if (youtubeRegex.test(youtubeLink)) {
+                document.getElementById('linkFormDiv').style.display = 'none';
+                document.getElementById('title').style.display = 'none';
+                document.getElementById('loadingDiv').style.display = 'block';
+                $.ajax({
+                    type: $('#linkForm').attr('method'),
+                    url: '/download',
+                    data: $('#linkForm').serialize(),
+                    success: function (data) {
+			    		if (data == 0) {
+			    			console.log("Server is full, please try again later");
+                        	document.getElementById('title').style.display = 'none';
+			    	    	document.getElementById('linkFormDiv').style.display = 'none';
+			    	    	document.getElementById('ttsFormDiv').style.display = 'none';
+			    	    	document.getElementById('loadingDiv').style.display = 'none';
+			    	    	document.getElementById('errorDiv').style.display = 'none';
+			    			document.getElementById('fullDiv').style.display = 'block';
+			    		} else {
+                        	console.log('Submission was successful.');
+                        	voice_id = data.voice_id;
+                        	document.getElementById('loadingDiv').style.display = 'none';
+                        	document.getElementById('title').style.display = 'block';
+                        	document.getElementById('ttsFormDiv').style.display = 'block';
+			    		}
+                    },
+                    error: function (data) {
+                        console.log('An error occurred.');
+                    }
+                });
+            } else {
+                alert("Invalid youtube link");
+            }
         }
         function ttsSubmit(e){
             document.getElementById('playBtn').disabled = true;
             document.getElementById('downloadBtn').disabled = true;
-            e.preventDefault(); //This will prevent the default click action
+            e.preventDefault();
             $.ajax({
                 type: $('#ttsForm').attr('method'),
                 url: '/tts',
@@ -79,9 +144,7 @@
                 success: function (data) {
                     console.log('Submission was successful.');
                     const base64Audio = data;
-
-                    // Convert the base64 encoded string to an ArrayBuffer
-                    const binaryString = window.atob(base64Audio);
+                    const binaryString = window.atob(base64Audio); // Convert the base64 encoded string to an ArrayBuffer
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
                     for (let i = 0; i < len; i++) {
@@ -112,13 +175,15 @@
         </form>
     </div>
     <div id="loadingDiv" style="display: none;">
-        <h2>Loading</h2>
-        <div id="progressBar"></div>
+        <div id="progress"></div>
     </div>
     <div id="errorDiv" style="display: none;">
         <h2>⚠️ Connection to server lost</h2>
     </div>
-    <div id="ttsFormDiv" style="display:none;">
+	<div id="fullDiv" style="display: none;">
+        <h2>⚠️ Server is full, please try again later</h2>
+    </div>
+    <div id="ttsFormDiv" style="display: none;">
         <form action="#" id="ttsForm" onsubmit="ttsSubmit(event);" method="POST">
             <textarea class="form-control textBox" id="voice" name="text" rows="4" autocomplete="off" cols="50"></textarea>
             <input id="submitBtn" class="btn btn-outline-light formButton" type="submit" value="Generate">
