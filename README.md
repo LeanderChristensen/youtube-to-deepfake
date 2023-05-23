@@ -4,6 +4,9 @@ Clone voices straight from YouTube videos using the Elevenlabs API. Insert a You
 
 Try here: [l-c.io/yt2df](https://l-c.io/yt2df/)
 
+![link page](https://i.imgur.com/CZN3UPv.png)
+![tts page](https://i.imgur.com/kSzy0pp.png)
+
 ## Local Install
 
 If you want to run this app locally, please make sure you have the following installed:
@@ -26,7 +29,7 @@ npm install
 ```
 4. Open the .env.sample file and set the value of ELEVENLABS_API_KEY to your [ElevenLabs API key](https://elevenlabs.io). Then rename it to .env
 
-5. Set the ffmpegPath in app.js to the path where your ffmpeg binary is installed on your system (find out with linux command: which ffmpeg).
+5. Set the ffmpegPath in app.js to the path where your ffmpeg binary is installed on your system (find out with linux command: which ffmpeg)
 
 6. Start the application:
 ```
