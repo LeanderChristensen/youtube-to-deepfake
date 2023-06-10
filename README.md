@@ -1,4 +1,4 @@
-# youtube-to-deepfake
+# Youtube to deepfake
 
 Clone voices straight from YouTube videos using the Elevenlabs API. Insert a YouTube link, clone the voice from the audio in the video, and generate text-to-speech audio.
 
