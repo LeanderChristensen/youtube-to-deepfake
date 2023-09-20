@@ -2,7 +2,7 @@
 
 Clone voices straight from YouTube videos using the Elevenlabs API. Insert a YouTube link, clone the voice from the audio in the video, and generate text-to-speech audio.
 
-Try here: [l-c.io/yt2df](https://l-c.io/yt2df/)
+Try here: Demo no longer available
 
 ![link page](https://i.imgur.com/CZN3UPv.png)
 ![tts page](https://i.imgur.com/kSzy0pp.png)
